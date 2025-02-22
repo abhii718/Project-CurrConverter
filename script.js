@@ -8,7 +8,7 @@ const msg = document.querySelector("#exchangeRateMsg");
 const convertBtn = document.querySelector("#convertBtn");
 const swapBtn = document.querySelector(".fa-arrow-right-arrow-left");
 
-// Initialize Currencies
+// Initialize Currencies (Fixed: clear existing options first)
 const initializeCurrencies = async () => {
   try {
     const response = await fetch(`${BASE_URL}/USD`);
@@ -20,11 +20,10 @@ const initializeCurrencies = async () => {
     const currencies = Object.keys(data.conversion_rates);
     
     [fromCurr, toCurr].forEach(select => {
+      select.innerHTML = ''; // Clear existing options
       currencies.forEach(currency => {
-        const option = document.createElement("option");
-        option.value = currency;
-        option.textContent = currency;
-        select.appendChild(option);
+        const option = new Option(currency, currency);
+        select.add(option);
       });
     });
     
@@ -36,7 +35,7 @@ const initializeCurrencies = async () => {
   }
 };
 
-// Update flags based on currency
+// Update flags (no automatic conversion)
 const updateFlags = () => {
   document.querySelectorAll(".select-container img").forEach((img, index) => {
     const currency = index === 0 ? fromCurr.value : toCurr.value;
@@ -45,24 +44,23 @@ const updateFlags = () => {
   });
 };
 
-// Currency conversion function
+// Conversion function
 const updateExchangeRate = async () => {
   try {
-    let amtVal = Math.abs(parseFloat(amount.value)) || 1;
-    amount.value = amtVal;
-
+    const amtVal = Math.abs(parseFloat(amount.value)) || 1;
+    if (isNaN(amtVal)) throw new Error("Invalid amount");
+    
     const response = await fetch(`${BASE_URL}/${fromCurr.value}`);
-    if (!response.ok) throw new Error("Failed to fetch exchange rates");
+    if (!response.ok) throw new Error("Failed to fetch rates");
     
     const data = await response.json();
     if (data.result !== "success") throw new Error(data["error-type"]);
     
     const rate = data.conversion_rates[toCurr.value];
-    if (!rate) throw new Error("Invalid target currency");
+    if (!rate) throw new Error("Unsupported currency pair");
     
     const convertedAmount = (amtVal * rate).toFixed(2);
     msg.textContent = `${amtVal} ${fromCurr.value} = ${convertedAmount} ${toCurr.value}`;
-    
   } catch (error) {
     msg.textContent = `Error: ${error.message}`;
     console.error(error);
@@ -73,14 +71,19 @@ const updateExchangeRate = async () => {
 swapBtn.addEventListener("click", () => {
   [fromCurr.value, toCurr.value] = [toCurr.value, fromCurr.value];
   updateFlags();
+  updateExchangeRate(); // Trigger conversion after swap
 });
 
-convertBtn.addEventListener("click", () => {
+convertBtn.addEventListener("click", (e) => {
+  e.preventDefault(); // Prevent form submission reload
   updateExchangeRate();
 });
 
-fromCurr.addEventListener("change", updateFlags);
-toCurr.addEventListener("change", updateFlags);
+// Handle form submission (Enter key)
+document.querySelector("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  updateExchangeRate();
+});
 
-// Initialization
+// Initialize
 initializeCurrencies();
