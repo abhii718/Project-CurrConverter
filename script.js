@@ -1,5 +1,4 @@
 const BASE_URL = "https://v6.exchangerate-api.com/v6/796af9a3b47470c78a7eff72/latest";
-// ⚠️ Note: In real production, move the API key to a backend service
 
 // DOM Elements
 const amount = document.querySelector(".amount input");
@@ -20,7 +19,6 @@ const initializeCurrencies = async () => {
     
     const currencies = Object.keys(data.conversion_rates);
     
-    // Populate dropdowns
     [fromCurr, toCurr].forEach(select => {
       currencies.forEach(currency => {
         const option = document.createElement("option");
@@ -30,11 +28,9 @@ const initializeCurrencies = async () => {
       });
     });
     
-    // Set default values
     fromCurr.value = "USD";
     toCurr.value = "INR";
     updateFlags();
-    
   } catch (error) {
     msg.textContent = `Error: ${error.message}`;
   }
@@ -74,34 +70,17 @@ const updateExchangeRate = async () => {
 };
 
 // Event Listeners
-let timeout;
-amount.addEventListener("input", () => {
-  clearTimeout(timeout);
-  timeout = setTimeout(updateExchangeRate, 500);
-});
-
 swapBtn.addEventListener("click", () => {
   [fromCurr.value, toCurr.value] = [toCurr.value, fromCurr.value];
   updateFlags();
+});
+
+convertBtn.addEventListener("click", () => {
   updateExchangeRate();
 });
 
-document.querySelector("form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  updateExchangeRate();
-});
-
-fromCurr.addEventListener("change", () => {
-  updateFlags();
-  updateExchangeRate();
-});
-
-toCurr.addEventListener("change", () => {
-  updateFlags();
-  updateExchangeRate();
-});
+fromCurr.addEventListener("change", updateFlags);
+toCurr.addEventListener("change", updateFlags);
 
 // Initialization
-initializeCurrencies().then(() => {
-  updateExchangeRate();
-});
+initializeCurrencies();
