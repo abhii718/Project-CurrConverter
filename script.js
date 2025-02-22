@@ -7,25 +7,33 @@ const msg = document.querySelector("#exchangeRateMsg");
 
 const updateExchangeRate = async () => {
     try {
-        let amtVal = parseFloat(amount.value) || 1; // Ensure a valid number
-        amount.value = amtVal; // Set default value if input is empty or invalid
-        
+        let amtVal = parseFloat(amount.value) || 1;
+        amount.value = amtVal; 
+
         const URL = `${BASE_URL}/${fromCurr.value}`;
         let response = await fetch(URL);
-        if (!response.ok) throw new Error("Failed to fetch exchange rate");
-
+        if (!response.ok) throw new Error("Failed to fetch");
+        
         let data = await response.json();
-        let rate = data.conversion_rates[toCurr.value];
+        if (data.result !== "success") throw new Error(data["error-type"]);
 
-        if (!rate) throw new Error("Invalid currency selection");
+        let rate = data.conversion_rates[toCurr.value];
+        if (!rate) throw new Error("Invalid currency");
 
         let finalAmount = amtVal * rate;
         msg.innerText = `${amtVal} ${fromCurr.value} = ${finalAmount.toFixed(2)} ${toCurr.value}`;
     } catch (error) {
-        msg.innerText = "Error fetching exchange rate!";
+        msg.innerText = "Error: " + error.message;
         console.error(error);
     }
 };
 
-// Example: Attach to a button click
+// Event Listeners
 document.querySelector("#convertBtn").addEventListener("click", updateExchangeRate);
+[fromCurr, toCurr, amount].forEach(element => {
+    element.addEventListener("change", updateExchangeRate);
+    element.addEventListener("input", updateExchangeRate); 
+});
+
+// Initial load
+updateExchangeRate();
